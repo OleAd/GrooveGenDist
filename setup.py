@@ -10,11 +10,11 @@ from setuptools import setup, find_packages
 
 HERE = pathlib.Path(__file__).parent
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 PACKAGE_NAME = 'GrooveGenerator'
 AUTHOR = 'Ole Adrian Heggli'
 AUTHOR_EMAIL = 'oleheggli@gmail.com'
-URL = 'TOBEINSERTED'
+URL = 'https://github.com/OleAd/GrooveGenerator'
 
 LICENSE = 'MIT License'
 DESCRIPTION = 'Collection of functions to generate and analyse rhythm patterns.'
@@ -22,10 +22,10 @@ LONG_DESCRIPTION = (HERE / "README.md").read_text()
 LONG_DESC_TYPE = "text/markdown"
 
 INSTALL_REQUIRES = [
-      'numpy',
-      'pandas',
-	  'mido',
-	  'scipy'
+      'numpy>=1.21.2',
+      'pandas>=1.3.3',
+	  'mido>=1.2.10',
+	  'scipy>=1.7.1'
 ]
 
 setup(name=PACKAGE_NAME,

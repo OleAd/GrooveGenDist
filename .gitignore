@@ -1,0 +1,4 @@
+/build/
+/dist/
+/GrooveGenerator.egg-info/
+/GrooveGenerator/__pycache__/

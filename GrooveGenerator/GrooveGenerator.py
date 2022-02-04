@@ -6,15 +6,9 @@ Created on Mon Oct 11 13:59:46 2021
 """
 import mido
 import os
-import glob
-#import math
-#from scipy.io import wavfile
-import subprocess
 import time
-#import random
 import numpy as np
 import pandas as pd
-import sys
 import scipy.io.wavfile
 '''
 test = np.array([[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
@@ -28,13 +22,6 @@ test = np.array([[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
 '''
 
-#%% Make some folders
-
-if not os.path.isdir('stimsMidi'):
-	os.mkdir('stimsMidi')
-if not os.path.isdir('stimsWAV'):
-	os.mkdir('stimsWAV')
-	
 
 #%% Functions
 
@@ -59,6 +46,9 @@ def generate_midi(inputArray, tempo=120, loops=1, saveName='MIDIoutput'):
 	"""
 	if saveName[0][-4:] != '.mid':
 		saveName = saveName + '.mid'
+	
+	if not os.path.isdir('stimsMidi'):
+		os.mkdir('stimsMidi')
 	
 	output = mido.MidiFile(type=1)
 	# default is 480 ticks per beat.
@@ -121,21 +111,6 @@ def generate_midi(inputArray, tempo=120, loops=1, saveName='MIDIoutput'):
 	
 	return
 
-def thisPath():
-	"""
-	This returns the path of fluidsynth. NOT IN USE
-
-	Returns
-	-------
-	thisPath : Path to fluidsynth.
-
-	"""
-	thisPath = os.getcwd()
-	thisPath = thisPath + '\\bin\\fluidsynth.exe'
-	thisPath = thisPath.replace('\\', '/')
-	return thisPath
-
-
 
 def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100, dynamics=False):
 	"""
@@ -173,7 +148,9 @@ def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100
 	
 	if saveName[0][-4:] != '.wav':
 		saveName = saveName + '.wav'
-	
+		
+	if not os.path.isdir('stimsWAV'):
+		os.mkdir('stimsWAV')
 
 	# read samples
 	
