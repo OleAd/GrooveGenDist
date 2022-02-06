@@ -5,14 +5,14 @@
 This package contains utility functions for generating rhythm patterns, and calculating related measures.
 
 ## Installation
-'''bash
+```bash
 pip install groovegenerator
-'''
+```
 
 or upgrade
-'''bash
+```bash
 pip install groovegenerator --upgrade
-
+```
 ## Examples
 Example scripts can be found in the [Groove Generator examples directory](https://github.com/olead/groovegendist/tree/master/examples).
 
@@ -20,8 +20,8 @@ Example scripts can be found in the [Groove Generator examples directory](https:
 An optional GUI is available in the [GUI directory](https://github.com/olead/groovegendist/tree/master/GUI).
 
 To use it:
-'''bash
+```bash
 python groovegenerator_gui.py
-'''
+```
 
 Note that the GUI requires PyQt5 and qtmodern.
