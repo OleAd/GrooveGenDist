@@ -10,11 +10,11 @@ from setuptools import setup, find_packages
 
 HERE = pathlib.Path(__file__).parent
 
-VERSION = '0.1.1'
-PACKAGE_NAME = 'GrooveGenerator'
+VERSION = '0.1.0'
+PACKAGE_NAME = 'groovegenerator'
 AUTHOR = 'Ole Adrian Heggli'
 AUTHOR_EMAIL = 'oleheggli@gmail.com'
-URL = 'https://github.com/OleAd/GrooveGenerator'
+URL = 'https://github.com/OleAd/GrooveGenDist'
 
 LICENSE = 'MIT License'
 DESCRIPTION = 'Collection of functions to generate and analyse rhythm patterns.'
@@ -38,5 +38,7 @@ setup(name=PACKAGE_NAME,
       author_email=AUTHOR_EMAIL,
       url=URL,
       install_requires=INSTALL_REQUIRES,
-      packages=find_packages()
+      packages=find_packages(),
+	  include_package_data=True,
+	  package_data={'': ['samples/*.wav']}
       )

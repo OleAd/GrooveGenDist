@@ -10,17 +10,8 @@ import time
 import numpy as np
 import pandas as pd
 import scipy.io.wavfile
-'''
-test = np.array([[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-,[0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0]
-,[1,0,0,1,0,0,1,1,0,0,0,0,0,0,0,0]])
+import pkg_resources
 
-
-test = np.array([[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-,[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-,[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]])
-
-'''
 
 
 #%% Functions
@@ -47,8 +38,7 @@ def generate_midi(inputArray, tempo=120, loops=1, saveName='MIDIoutput'):
 	if saveName[0][-4:] != '.mid':
 		saveName = saveName + '.mid'
 	
-	if not os.path.isdir('stimsMidi'):
-		os.mkdir('stimsMidi')
+	
 	
 	output = mido.MidiFile(type=1)
 	# default is 480 ticks per beat.
@@ -136,6 +126,9 @@ def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100
 
 	"""
 	
+	# input check
+	assert pattern.shape[0] == 3, 'Wrong shape of pattern, should be 3xn!'
+	
 	#this experimentally just adds some dynamics
 	if dynamics:
 		dynamicsHihat = np.tile([0.7, 0.5, 1, 0.5], 8)
@@ -146,17 +139,19 @@ def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100
 		dynamicsSnare = np.ones(32)
 		dynamicsKick = np.ones(32)
 	
-	if saveName[0][-4:] != '.wav':
+	if saveName[-4:] != '.wav':
 		saveName = saveName + '.wav'
 		
-	if not os.path.isdir('stimsWAV'):
-		os.mkdir('stimsWAV')
-
-	# read samples
 	
-	rate, hihatSample = scipy.io.wavfile.read('samples/hihat.wav')
-	rate, kickSample = scipy.io.wavfile.read('samples/kick.wav')
-	rate, snareSample = scipy.io.wavfile.read('samples/snare.wav')
+	# read samples
+	hihatLoc = pkg_resources.resource_stream(__name__, 'samples/hihat.wav')
+	rate, hihatSample = scipy.io.wavfile.read(hihatLoc)
+	
+	kickLoc = pkg_resources.resource_stream(__name__, 'samples/kick.wav')
+	rate, kickSample = scipy.io.wavfile.read(kickLoc)
+	
+	snareLoc = pkg_resources.resource_stream(__name__, 'samples/snare.wav')
+	rate, snareSample = scipy.io.wavfile.read(snareLoc)
 	
 	# just pushing down the amplitude a bit
 	hihatSample = hihatSample * 0.25
@@ -259,12 +254,13 @@ def processPattern(pattern, savename='default', tempo=120, loops=1):
 	None.
 
 	"""
+
+	# input check
+	assert pattern.shape[0] == 3, 'Wrong shape of pattern, should be 3xn!'
 	savename.replace(' ', '')
 	
-	patternA = pattern[1,] # snare
-	patternB = pattern[2,] # kick
 	
-	SI = calculate(patternA, patternB)
+	SI = calculate(pattern)
 	hSI = SI[0]
 	wSI = SI[1]
 	hSIstring = str(round(hSI, 3))
@@ -275,6 +271,11 @@ def processPattern(pattern, savename='default', tempo=120, loops=1):
 	
 	wSIstring = wSIstring.replace('.', '_')
 	wSIformatted = '-wSI-' +wSIstring
+
+	if not os.path.isdir('stimsWAV'):
+		os.mkdir('stimsWAV')
+	if not os.path.isdir('stimsMidi'):
+		os.mkdir('stimsMidi')
 
 	midiName = 'stimsMidi/' + savename + hSIformatted + wSIformatted
 	waveName = 'stimsWAV/' + savename + hSIformatted + wSIformatted
@@ -384,7 +385,7 @@ def searchPattern(SImeasure='W', target=30, timeout=60, minEvents=10, maxEvents=
 	while generate:
 		count += 1
 		thisPattern = generateRandomPattern(minEvents, maxEvents)
-		SIs = calculate(thisPattern[1], thisPattern[2])
+		SIs = calculate(thisPattern)
 		thisSI = SIs[select]
 		
 		if thisSI >= target*0.9 and thisSI <= target*1.1:
@@ -423,13 +424,13 @@ def savePattern(pattern, saveName='pattern', verbose=True):
 	None.
 
 	"""
+	# input check
+	assert pattern.shape[0] == 3, 'Wrong shape of pattern, should be 3xn!'
 	
-	patternA = pattern[1,] # snare
-	patternB = pattern[2,] # kick
 	
-	output = syncopationIndexHoesl(patternA, patternB, wrap = False)
+	output = syncopationIndexHoesl(pattern, wrap = False)
 	hWeights = output[1]
-	output = syncopationIndexWitek(patternA, patternB, wrap = False)
+	output = syncopationIndexWitek(pattern, wrap = False)
 	wWeights = output[1]
 	
 	data = {'hihat':pattern[0,],
@@ -485,7 +486,7 @@ def loadPattern(filename, asArray=True):
 
 		
 #%% Syncopation measures
-def syncopationIndexHoesl(patternA, patternB, wrap = True, weights = None):
+def syncopationIndexHoesl(pattern, wrap = True, weights = None):
 	"""
 	This function calculates Hoesl's syncopation index from
 	X.
@@ -509,6 +510,15 @@ def syncopationIndexHoesl(patternA, patternB, wrap = True, weights = None):
 		Returns the syncopation index value.
 
 	"""
+	# input check
+	assert pattern.shape[0] == 3, 'Wrong shape of pattern, should be 3xn!'
+	
+	patternA = pattern[1,] # snare
+	patternB = pattern[2,] # kick
+	
+	
+	
+	
 	# default to wrapping, meaning that the first event in the patterns
 	
 	if weights is not None:
@@ -566,7 +576,7 @@ def syncopationIndexHoesl(patternA, patternB, wrap = True, weights = None):
 	return output
 
 
-def syncopationIndexWitek(patternA, patternB, wrap = True, weights = None):
+def syncopationIndexWitek(pattern, wrap = True, weights = None):
 	"""
 	This calculates Witek's syncopation index from X.
 
@@ -587,6 +597,11 @@ def syncopationIndexWitek(patternA, patternB, wrap = True, weights = None):
 		Returns the syncopation index.
 
 	"""
+	# input check
+	assert pattern.shape[0] == 3, 'Wrong shape of pattern, should be 3xn!'
+	
+	patternA = pattern[1,] # snare
+	patternB = pattern[2,] # kick
 
 	
 	if weights is not None:
@@ -641,7 +656,7 @@ def syncopationIndexWitek(patternA, patternB, wrap = True, weights = None):
 	
 	return output
 
-def calculate(patternA, patternB, wrap = True, weights = None, verbose=False):
+def calculate(pattern, wrap = True, weights = None, verbose=False):
 	"""
 	This function wraps both syncopation index calculations.
 
@@ -666,19 +681,21 @@ def calculate(patternA, patternB, wrap = True, weights = None, verbose=False):
 		Witek's syncopation index.
 
 	"""
+	
+	# input check
+	assert pattern.shape[0] == 3, 'Wrong shape of pattern, should be 3xn!'
+	
+	
 	# Calculates and reports the SI, only the SI
 	
 
-	hSI = syncopationIndexHoesl(patternA, patternB, wrap, weights)[0]
-	wSI = syncopationIndexWitek(patternA, patternB, wrap, weights)[0]
+	hSI = syncopationIndexHoesl(pattern, wrap, weights)[0]
+	wSI = syncopationIndexWitek(pattern, wrap, weights)[0]
 	if verbose:
 		print('hSI is: ' + str(round(hSI,3)) + ' wSI is: ' + str(round(wSI,3)))
 
 	
 	return hSI, wSI
-
-
-
 
 
 
