@@ -10,7 +10,7 @@ from setuptools import setup, find_packages
 
 HERE = pathlib.Path(__file__).parent
 
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 PACKAGE_NAME = 'groovegenerator'
 AUTHOR = 'Ole Adrian Heggli'
 AUTHOR_EMAIL = 'oleheggli@gmail.com'
