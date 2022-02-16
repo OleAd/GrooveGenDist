@@ -102,7 +102,8 @@ def generate_midi(inputArray, tempo=120, loops=1, saveName='MIDIoutput'):
 	return
 
 
-def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100, dynamics=False):
+def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100, 
+				 dynamics=False, amen=False):
 	"""
 	Generate a .wav file from a pattern.
 	Specify a tempo (in BPM), loops, name of the file, sampling rate,
@@ -144,19 +145,27 @@ def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100
 		
 	
 	# read samples
-	hihatLoc = pkg_resources.resource_stream(__name__, 'samples/hihat.wav')
+	if amen:
+		hihatLoc = pkg_resources.resource_stream(__name__, 'samples/amenRideLong.wav')
+		kickLoc = pkg_resources.resource_stream(__name__, 'samples/amenKickLong.wav')
+		snareLoc = pkg_resources.resource_stream(__name__, 'samples/amenSnareLong.wav')
+	else:
+		hihatLoc = pkg_resources.resource_stream(__name__, 'samples/hihat.wav')
+		kickLoc = pkg_resources.resource_stream(__name__, 'samples/kick.wav')
+		snareLoc = pkg_resources.resource_stream(__name__, 'samples/snare.wav')
+	
+	
 	rate, hihatSample = scipy.io.wavfile.read(hihatLoc)
-	
-	kickLoc = pkg_resources.resource_stream(__name__, 'samples/kick.wav')
 	rate, kickSample = scipy.io.wavfile.read(kickLoc)
-	
-	snareLoc = pkg_resources.resource_stream(__name__, 'samples/snare.wav')
 	rate, snareSample = scipy.io.wavfile.read(snareLoc)
 	
 	# just pushing down the amplitude a bit
-	hihatSample = hihatSample * 0.25
-	kickSample = kickSample * 0.25
-	snareSample = snareSample * 0.25
+	if not amen:
+		hihatSample = hihatSample * 0.25
+		kickSample = kickSample * 0.25
+		snareSample = snareSample * 0.25
+	
+	
 	
 	maxLengthSample = max([len(hihatSample), len(snareSample), len(kickSample)])
 	
@@ -209,8 +218,7 @@ def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100
 	#jointSample = jointSample[0:int(round(length)),].astype('int16')
 	
 	# add loops
-	# actually, do a little trick here to avoid any cutoff at the seams
-	# looped = np.tile(jointSample, (loops,1))
+	
 	looped = np.zeros((int(((length) * loops + (2 * length))), 2), dtype='int16')
 	#if loops > 1:
 	for n in range(0, loops):
@@ -290,7 +298,7 @@ def processPattern(pattern, savename='default', tempo=120, loops=1):
 #%% Pattern generation
 
 
-def generateRandomPattern(minEvents=10, maxEvents=20):
+def generateRandomPattern(minEvents=10, maxEvents=20, avoidMultiples=False, maxMultiple=3):
 	"""
 	This function generates a random rhythm pattern.
 	It draws from a power distribution, and returns a pattern with selectable
@@ -311,8 +319,8 @@ def generateRandomPattern(minEvents=10, maxEvents=20):
 	"""
 	# just a simple random pattern with some contraints
 	
-	maxEvents = 20
-	minEvents = 10
+	#maxEvents = 20
+	#minEvents = 10
 	# collapse over both instruments? Total between 12 and 18?
 	
 	# set the hi-hat first
@@ -328,11 +336,139 @@ def generateRandomPattern(minEvents=10, maxEvents=20):
 		both = np.array([snare, kick]).flatten()
 		if sum(both) >= minEvents and sum(both) <= maxEvents:
 			generate = False
+		# adding now a section that will check for too many hits in a row
+		if avoidMultiples:
+			snareDiff = np.diff(snare)
+			
+			countCaseSnare = 0
+			for n in snareDiff:
+				if n == 0:
+					countCaseSnare += 1
+				else:
+					countCaseSnare = 0
+				if n >= maxMultiple:
+					generate = True
+					break
+			
+			kickDiff = np.diff(kick)
+			countCaseKick = 0
+			for n in kickDiff:
+				if n == 0:
+					countCaseKick += 1
+				else:
+					countCaseKick = 0
+				if n >= maxMultiple:
+					generate = True
+					break
+			
 	
 	pattern = np.array([hihat, snare, kick])
 
 	
 	return pattern
+
+
+def generateConstrainedPattern(minSnare=10, 
+							   maxSnare=20,
+							   minKick=4,
+							   maxKick=20, 
+							   avoidMultiples=False, 
+							   maxMultiple=3):
+	"""
+	This function generates a constrainted rhythm pattern.
+	TODO
+
+	Parameters
+	----------
+	minEvents : Integer, optional
+		Minimum number of events in the rhythm. The default is 10.
+	maxEvents : TYPE, optional
+		Maximum number of events in the rhythm. The default is 20.
+
+	Returns
+	-------
+	pattern : Numpy array
+		A rhythm pattern.
+
+	"""
+	# just a simple random pattern with some contraints
+	# generate them separately
+	
+	# set the hi-hat first
+	hihat = np.array([1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+	        1, 0, 1, 0, 1, 0, 1, 0, 1, 0])
+
+	# now generating 
+	
+	# define a bit of probabilities or something
+	probArrayKick = np.tile([0.8, 0.2, 0.4, 0.2, 0.6, 0.2, 0.4, 0.2], 4)
+	probArraySnare = np.tile([0.3, 0.4, 0.6, 0.4, 0.8, 0.4, 0.5, 0.4], 4)
+	generate = True
+	
+	
+	genSnare = True
+	genKick = True
+	
+	
+	while genSnare:
+		snare = np.array([])
+		for n in range(0, 32):
+			snare = np.insert(snare, n, np.random.binomial(1, probArraySnare[n]))	
+		genSnare = False
+		snare = snare.astype(int)
+		if sum(snare) < minSnare or sum(snare) > maxSnare:
+			genSnare = True
+			continue
+		# adding now a section that will check for too many hits in a row
+		if avoidMultiples:
+			snareDiff = np.diff(snare)		
+			countCaseSnare = 0
+			for n in snareDiff:
+				if n == 0:
+					countCaseSnare += 1
+				else:
+					countCaseSnare = 0
+				if n >= maxMultiple:
+					genSnare = True
+					break
+
+		
+
+
+	
+	while genKick:
+		kick = np.array([])
+		for n in range(0, 32):	
+			kick = np.insert(kick, n, np.random.binomial(1, probArrayKick[n]))
+		genKick = False
+		kick[0] = 1	
+		kick = kick.astype(int)
+		if sum(kick) < minKick or sum(kick) > maxKick:
+			genKick = True
+			continue
+		# adding now a section that will check for too many hits in a row
+		if avoidMultiples:
+			kickDiff = np.diff(kick)
+			countCaseKick = 0
+			for n in kickDiff:
+				if n == 0:
+					countCaseKick += 1
+				else:
+					countCaseKick = 0
+				if n >= maxMultiple:
+					genKick = True
+					break	
+		
+				
+	
+	pattern = np.array([hihat, snare, kick])
+
+	
+	return pattern
+
+
+
+
 
 
 def searchPattern(SImeasure='W', target=30, timeout=60, minEvents=10, maxEvents=30, verbose=True):
@@ -698,6 +834,59 @@ def calculate(pattern, wrap = True, weights = None, verbose=False):
 	return hSI, wSI
 
 
+
+#%% Work in progress from here and below
+
+def kComplexity(pattern, joint=False):
+	'''
+	This should calculate the Kolmogorov complexity,
+	as defined in Li & Sleep, 2004.
+
+	Parameters
+	----------
+	pattern : Numpy array
+		The rhythm pattern to process.
+	joint : Boolean
+		Set to true to get the kComplexity over a tiled array of snare and kick
+		Set to false to get the sum of kComplexity for snare and kick respectively
+
+	Returns
+	-------
+	Kest : Integer
+		The estimated Kolmogorov complexity
+
+	'''
+	def calc_kComplexity(pattern):
+		dictionary = {}
+		w = ''
+		Kest = 0
+		
+		for n in pattern:
+			C = n
+			wC = w+C
+			if wC in dictionary:
+				w = wC;
+			else:
+				Kest = Kest+1
+				dictionary[wC] = wC
+				w = ''
+		
+		if w != '':
+			Kest = Kest+1
+		return Kest
+	
+	
+	# Run on both snare and kick, then sum?
+	if not joint:
+		Kest_snare = calc_kComplexity(str(pattern[1,]).replace('[', '').replace(']', '')) # snare
+		Kest_kick = calc_kComplexity(str(pattern[2,]).replace('[', '').replace(']', ''))  # kick
+		Kout = Kest_snare + Kest_kick
+	else:
+		tiledPattern = str(pattern[1,]).replace('[', '').replace(']', '')+ str(pattern[2,]).replace('[', '').replace(']', '')
+		Kout = calc_kComplexity(tiledPattern)
+
+	
+	return Kout
 
 
 
