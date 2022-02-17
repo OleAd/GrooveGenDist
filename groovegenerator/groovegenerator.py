@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import scipy.io.wavfile
 import pkg_resources
+from math import log, e
 
 
 
@@ -103,7 +104,7 @@ def generate_midi(inputArray, tempo=120, loops=1, saveName='MIDIoutput'):
 
 
 def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100, 
-				 dynamics=False, amen=False):
+				 dynamics=False, customSound=None):
 	"""
 	Generate a .wav file from a pattern.
 	Specify a tempo (in BPM), loops, name of the file, sampling rate,
@@ -145,10 +146,15 @@ def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100
 		
 	
 	# read samples
-	if amen:
-		hihatLoc = pkg_resources.resource_stream(__name__, 'samples/amenRideLong.wav')
-		kickLoc = pkg_resources.resource_stream(__name__, 'samples/amenKickLong.wav')
-		snareLoc = pkg_resources.resource_stream(__name__, 'samples/amenSnareLong.wav')
+	if customSound:
+		if customSound == 'amen':
+			hihatLoc = pkg_resources.resource_stream(__name__, 'samples/amenRideLong.wav')
+			kickLoc = pkg_resources.resource_stream(__name__, 'samples/amenKickLong.wav')
+			snareLoc = pkg_resources.resource_stream(__name__, 'samples/amenSnareLong.wav')
+		elif customSound == '909':
+			hihatLoc = pkg_resources.resource_stream(__name__, 'samples/909hihatStereo.wav')
+			kickLoc = pkg_resources.resource_stream(__name__, 'samples/909kickStereo.wav')
+			snareLoc = pkg_resources.resource_stream(__name__, 'samples/909snareStereo.wav')
 	else:
 		hihatLoc = pkg_resources.resource_stream(__name__, 'samples/hihat.wav')
 		kickLoc = pkg_resources.resource_stream(__name__, 'samples/kick.wav')
@@ -160,7 +166,7 @@ def generate_wav(pattern, tempo=120, loops=1, saveName='audiofile.wav', fs=44100
 	rate, snareSample = scipy.io.wavfile.read(snareLoc)
 	
 	# just pushing down the amplitude a bit
-	if not amen:
+	if not customSound:
 		hihatSample = hihatSample * 0.25
 		kickSample = kickSample * 0.25
 		snareSample = snareSample * 0.25
@@ -403,8 +409,7 @@ def generateConstrainedPattern(minSnare=10,
 	# define a bit of probabilities or something
 	probArrayKick = np.tile([0.8, 0.2, 0.4, 0.2, 0.6, 0.2, 0.4, 0.2], 4)
 	probArraySnare = np.tile([0.3, 0.4, 0.6, 0.4, 0.8, 0.4, 0.5, 0.4], 4)
-	generate = True
-	
+
 	
 	genSnare = True
 	genKick = True
@@ -889,7 +894,77 @@ def kComplexity(pattern, joint=False):
 	return Kout
 
 
+def entropy(singlePattern, base=None):
+	'''
+	Calculates entropy
+
+	Parameters
+	----------
+	singlePattern : numpy array
+		Pattern to calculate entropy for.
+	base : Integer/float, optional
+		The base for the entropy. The default is None.
+
+	Returns
+	-------
+	Integer/float
+		Entropy.
+
+	'''
+
+	n_labels = len(singlePattern)
+
+	if n_labels <= 1:
+		return 0
+
+	value,counts = np.unique(singlePattern, return_counts=True)
+	probs = counts / n_labels
+	n_classes = np.count_nonzero(probs)
+
+	if n_classes <= 1:
+		return 0
+
+	ent = 0.
+
+	# Compute entropy
+	base = e if base is None else base
+	for i in probs:
+		ent -= i * log(i, base)
+
+	return ent
 
 
+def movingEntropy(pattern, sliceSize=4, jumpSize=2):
+	'''
+	Returns the std of the entropies of a moving window over a pattern
+
+	Parameters
+	----------
+	pattern : Numpy array
+		The pattern to do the calculation over.
+	sliceSize : Integer, optional
+		The length of each slice. The default is 4.
+	jumpSize : Integer, optional
+		The distance between each window. The default is 2.
+
+	Returns
+	-------
+	stdEntropy : Float
+		The standard deviation of the entropies calculated.
+
+	'''
+	
+	maxLength = len(pattern)
+	entropies = []
+	# double pattern to handle end
+	pattern = np.tile(pattern,2)
+	
+	for n in np.arange(0, maxLength, jumpSize):
+		thisSlice = pattern[n:n+sliceSize]
+		thisEntropy = entropy(thisSlice)
+		entropies.append(thisEntropy)
+	
+	stdEntropy = np.array(entropies).std()
+	return stdEntropy
 
 
