@@ -23,7 +23,7 @@ random_rhythm = gg.generateRandomPattern()
 random_rhythm_two = gg.generateRandomPattern(minEvents=10,
 											 maxEvents=30,
 											 avoidMultiples=True,
-											 maxMultiples=3)
+											 maxMultiple=3)
 
 # This makes a constrainted rhythm
 constrained_rhythm = gg.generateConstrainedPattern()
@@ -40,21 +40,21 @@ constrained_rhythm_two = gg.generateConstrainedPattern(minSnare=5,
 
 # Syncopation index
 witek_SI = gg.syncopationIndexWitek(random_rhythm)
-print('This rhythm has a syncopation index of ' + str(witek_SI) + ' as measured with Witek\'s SI')
+print('This rhythm has a syncopation index of ' + str(witek_SI[0]) + ' as measured with Witek\'s SI')
 
 hoesl_SI = gg.syncopationIndexHoesl(random_rhythm)
-print('This rhythm has a syncopation index of ' + str(hoesl_SI) + ' as measured with Hoesl\'s SI')
+print('This rhythm has a syncopation index of ' + str(round(hoesl_SI[0],3)) + ' as measured with Hoesl\'s SI')
 
 # Entropy
 # This takes a single stream, i.e. snare OR kick
 snare = random_rhythm[1,:]
 entropy_value = gg.entropy(snare)
-print('Entropy value is ' + str(entropy_value))
+print('Entropy value is ' + str(round(entropy_value,3)))
 
 # Kolmogorov complexity
 # This takes the entire pattern, but calculates between snare and kick
 k_complexity = gg.kComplexity(random_rhythm)
-
+print('Kolmogorov complexity is ' + str(round(k_complexity, 3)))
 
 #%% Make audio
 
@@ -62,7 +62,7 @@ k_complexity = gg.kComplexity(random_rhythm)
 gg.generate_wav(random_rhythm,
 				tempo=120,
 				loops=5,
-				saveName='my_rhythm.csv')
+				saveName='my_rhythm.wav')
 
 # There's also additional settings here
 gg.generate_wav(random_rhythm,
@@ -72,3 +72,11 @@ gg.generate_wav(random_rhythm,
 				fs=44100,
 				dynamics=True,
 				customSound='amen')
+
+gg.generate_wav(constrained_rhythm,
+				tempo=80,
+				loops=2,
+				saveName='my_third_rhythm.wav',
+				fs=44100,
+				dynamics=True,
+				customSound='909')
