@@ -233,6 +233,8 @@ class GrooveGenerator(QWidget):
 		print(name[0])
 		try:
 			pattern = gg.loadPattern(name[0], asArray=True)
+			#print(pattern)
+			pattern = pattern.flatten()
 			
 			assert len(pattern) == stepNumbers * stepChannels
 			
